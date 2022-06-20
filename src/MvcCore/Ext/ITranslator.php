@@ -69,6 +69,19 @@ interface ITranslator {
 	public function GetLocalization ();
 
 	/**
+	 * Set optional cache instance.
+	 * @param  \MvcCore\Ext\ICache|NULL $cache
+	 * @return \MvcCore\Ext\ITranslator
+	 */
+	public function SetCache (\MvcCore\Ext\ICache $cache = NULL);
+
+	/**
+	 * Get optional cachce instance.
+	 * @return \MvcCore\Ext\ICache|NULL
+	 */
+	public function GetCache ();
+
+	/**
 	 * Translate given key into target localization. If there is no translation
 	 * for given key in translations data, there is returned given key with plus sign.
 	 * @param  string $key          A key to translate.
@@ -91,9 +104,22 @@ interface ITranslator {
 	public function __invoke ($key, $replacements = []);
 
 	/**
-	 * Load translation store .
+	 * If there is cache configured and environment is not development,
+	 * get store from cache. If there is no cache record, load store from
+	 * primary resources.
+	 * If there is no cache defined or environment is development, load 
+	 * store always from primary resources.
+	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
-	 * @return array
+	 * @return array<string, string>
 	 */
-	public function LoadStore ();
+	public function GetStore ($resourceIds = NULL);
+
+	/**
+	 * Load translation store from primary resource(s).
+	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
+	 * @throws \Exception
+	 * @return array<string, string>
+	 */
+	public function LoadStore ($resourceIds = NULL);
 }

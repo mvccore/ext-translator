@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.0.0';
+	const VERSION = '5.0.1';
 
 	/**
 	 * Singleton instace for each localization.
@@ -88,7 +88,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected $i18nIcuTranslationsSupported = FALSE;
 
 	/**
-	 * Get translator instance by localization key (for example: `en`, `en_US`).
+	 * @inheritDocs
 	 * @param  string $localization Translator localization - it could be:
 	 *                              - lower case language code or 
 	 *                              - lower case language code + `_` + upper case locale code.
@@ -122,7 +122,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * Set translator localization (for example as `en` or `en-US` ...).
+	 * @inheritDocs
 	 * @param  string $localization Translator localization - it could be:
 	 *                              - lower case language code or 
 	 *                              - lower case language code + `_` + upper case locale code.
@@ -134,9 +134,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * Get translator localization - it could be:
-	 *  - lower case language code or 
-	 *  - lower case language code + `_` + upper case locale code.
+	 * @inheritDocs
 	 * @return string
 	 */
 	public function GetLocalization () {
@@ -144,7 +142,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * Set optional cache instance.
+	 * @inheritDocs
 	 * @param  \MvcCore\Ext\ICache|NULL $cache
 	 * @return \MvcCore\Ext\Translators\AbstractTranslator
 	 */
@@ -154,7 +152,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * Get optional cachce instance.
+	 * @inheritDocs
 	 * @return \MvcCore\Ext\ICache|NULL
 	 */
 	public function GetCache () {
@@ -162,22 +160,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * Basic translation view helper implementation by `__invoke()` megic method.
-	 * Please register translation view helper more better by anonymous closure
-	 * function with `$this->Translate()` function call inside. It's much faster
-	 * to handle view helper calls to translate strings.
-	 * @param  string $key			A key to translate.
-	 * @param  array  $replacements	An array of replacements to process in translated result.
-	 * @throws \Exception			En exception if translations store is not successful.
-	 * @return string				Translated key or key itself (if there is no key in translations store).
-	 */
-	public function __invoke ($translationKey, $replacements = []) {
-		return $this->Translate($translationKey, $replacements);
-	}
-
-	/**
-	 * Translate given key into target localization. If there is no translation
-	 * for given key in translations data, there is returned given key with plus sign.
+	 * @inheritDocs
 	 * @param  string $key          A key to translate.
 	 * @param  array  $replacements An array of replacements to process in translated result.
 	 * @throws \Exception           En exception if translation is not successful.
@@ -209,37 +192,49 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		}
 		return $translatedValue;
 	}
+	
+	/**
+	 * @inheritDocs
+	 * @param  string $key			A key to translate.
+	 * @param  array  $replacements	An array of replacements to process in translated result.
+	 * @throws \Exception			En exception if translations store is not successful.
+	 * @return string				Translated key or key itself (if there is no key in translations store).
+	 */
+	public function __invoke ($translationKey, $replacements = []) {
+		return $this->Translate($translationKey, $replacements);
+	}
 
 	/**
-	 * If there is cache configured and environment is not development,
-	 * get store from cache. If there is no cache record, load store from
-	 * primary resource.
-	 * If there is no cache defined or environment is development, load 
-	 * store always from primary resource.
-	 * @param  int|string|NULL Translation store id, optional.
+	 * @inheritDocs
+	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array
 	 */
-	public function GetStore ($id = NULL) {
+	public function GetStore ($resourceIds = NULL) {
+		$args = func_get_args();
+		$resourceIds = is_array($args[0]) && count($args) === 1
+			? $args[0]
+			: $args;
 		if ($this->writeNewTranslations || $this->cache === NULL)
-			return $this->LoadStore($id);
+			return $this->LoadStore($resourceIds);
 		return $this->cache->Load(
 			str_replace('<localization>', $this->localization, static::CACHE_KEY),
-			function (\MvcCore\Ext\ICache $cache, $cacheKey) use ($id) {
-				$result = $this->LoadStore($id);
+			function (\MvcCore\Ext\ICache $cache, $cacheKey) use ($resourceIds) {
+				$result = $this->LoadStore($resourceIds);
 				$cache->Save($cacheKey, $result, NULL, explode(',', static::CACHE_TAGS));
 				return $result;
 			}
 		);
 	}
+
 	/**
-	 * Load translation store from primary resource.
-	 * @param  int|string|NULL Translation store id, optional.
+	 * @inheritDocs
+	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
 	 */
-	public abstract function LoadStore ($id = NULL);
-
+	public abstract function LoadStore ($storeIds = NULL);
+	
 	/**
 	 * Thrown an exception with current translator class name.
 	 * @param  string $msg
