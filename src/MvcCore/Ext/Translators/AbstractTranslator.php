@@ -66,26 +66,39 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected $translations = NULL;
 
 	/**
-	 * Not translated keys to write in write background process handler after
-	 * request end. This store contains not translated keys for all
-	 * localizations for current request.
-	 * @var array<string, bool>
+	 * New translation keys to write in background process handler after
+	 * request end. This store contains not translated keys for current
+	 * localization for current request. Key is translation key, value
+	 * is translation text source file and line.
+	 * @var array<string, string>
 	 */
 	protected $newTranslations = [];
+
+	/**
+	 * Used translation keys to update in background process handler after
+	 * request end. This store contains already translated keys for current
+	 * localization for current request. Key is translation key, value
+	 * is translation text source file and line.
+	 * @var array<string, string>
+	 */
+	protected $usedTranslations = [];
 	
 	/**
 	 * Boolean about to write not translated keys in background process 
 	 * handler after request end. It's always `TRUE` if environment is development.
 	 * @var bool|NULL
 	 */
-	protected $writeNewTranslations = NULL;
+	protected $writeTranslations = NULL;
 
 	/**
-	 * Boolean about if translations write background process handler after
-	 * request end is already registered or not.
-	 * @var bool
+	 * Integer state about registration of background process handler 
+	 * to write new translations or update existing.
+	 *  - 0 - shutdown handler is not registered
+	 *  - 1 - shutdown handler is registered, but not necessary to call
+	 *  - 2 - shutdown handler is registered and necessary to call
+	 * @var int
 	 */
-	protected $shutdownHandlerRegistered = FALSE;
+	protected $shutdownHandlerRegistered = 0;
 
 	/**
 	 * `TRUE` if Intl extension installed and `\MessageFormatter` class exists.
@@ -120,9 +133,9 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 */
 	protected function __construct ($localization) {
 		$this->localization = $localization;
-		if ($this->writeNewTranslations === NULL) {
+		if ($this->writeTranslations === NULL) {
 			$environment = \MvcCore\Application::GetInstance()->GetEnvironment();
-			$this->writeNewTranslations = $environment->IsDevelopment();
+			$this->writeTranslations = $environment->IsDevelopment();
 		}
 		$this->i18nIcuTranslationsSupported = extension_loaded('intl') && class_exists('\\MessageFormatter');
 	}
@@ -191,15 +204,31 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @return string				Translated key or key itself (if there is no key in translations store).
 	 */
 	public function Translate ($key, $replacements = []) {
-		if ($this->translations === NULL)
+		if ($this->translations === NULL) 
 			$this->translations = $this->GetStore();
 		$i18nIcu = FALSE;
 		if (array_key_exists($key, $this->translations)) {
 			list($i18nIcu, $translation) = $this->translations[$key];
+			if ($this->writeTranslations)
+				$this->updateUsedTranslation($key);
 		} else {
-			$this->addNewTranslation($key);
-			$translation = ($this->writeNewTranslations ? static::NOT_TRANSLATED_KEY_MARK : '') . $key;
+			if ($this->writeTranslations)
+				$this->addNewTranslation($key);
+			$translation = ($this->writeTranslations ? static::NOT_TRANSLATED_KEY_MARK : '') . $key;
 		}
+		return $this->translateReplacements($key, $translation, $i18nIcu, $replacements);
+	}
+
+	/**
+	 * Process translation replacements.
+	 * @param  string                                         $key 
+	 * @param  string|\MvcCore\Ext\Translators\IcuTranslation $translation 
+	 * @param  bool|string                                    $i18nIcu 
+	 * @param  array                                          $replacements 
+	 * @throws \Exception           En exception if translation is not successful.
+	 * @return array|bool|string
+	 */
+	protected function translateReplacements ($key, $translation, $i18nIcu, $replacements = []) {
 		if ($this->i18nIcuTranslationsSupported && $i18nIcu) {
 			/** @var \MvcCore\Ext\Translators\IcuTranslation $translation */
 			if (!$translation->GetParsed())
@@ -208,11 +237,11 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 					."key: `{$key}`, localization: `{$this->localization}`."
 				);
 			$translatedValue = $translation->Translate($replacements);
-		} else if (is_string($translation)) {
-			$translatedValue = $translation;
-			if ($replacements !== NULL)
-				foreach ($replacements as $key => $val)
-					$translatedValue = str_replace('{'.$key.'}', (string) $val, $translatedValue);
+		} else {
+			$translatedValue = (string) $translation;
+			if (count($replacements) > 0)
+				foreach ($replacements as $replKey => $replVal)
+					$translatedValue = str_replace('{'.$replKey.'}', (string) $replVal, $translatedValue);
 		}
 		return $translatedValue;
 	}
@@ -236,7 +265,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 */
 	public function GetStore ($resourceIds = NULL) {
 		$this->mergeResourceIds(func_get_args());
-		if ($this->writeNewTranslations || $this->cache === NULL)
+		if ($this->writeTranslations || $this->cache === NULL)
 			return $this->LoadStore($this->resourceIds);
 		return $this->cache->Load(
 			str_replace('<localization>', $this->localization, static::CACHE_KEY),
@@ -294,20 +323,43 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * Add not translated keys into translations stores after request is terminated.
+	 * Add not translated key into translations stores after request is terminated.
 	 * @param  string $translationKey
 	 * @return void
 	 */
 	protected function addNewTranslation ($translationKey) {
-		if (!$this->writeNewTranslations || $this->shutdownHandlerRegistered) return;
+		$this->newTranslations[$translationKey] = $this->getTranslationSource(
+			$translationKey, \MvcCore\Application::GetInstance()->GetRequest()->GetAppRoot()
+		);
+		if ($this->shutdownHandlerRegistered) return;
+		$this->registerShutdownHandler();
+		$this->shutdownHandlerRegistered = 2;
+	}
+	
+	/**
+	 * Update used translation keys in translations stores after request is terminated.
+	 * @param  string $translationKey
+	 * @return void
+	 */
+	protected function updateUsedTranslation ($translationKey) {
+		$this->usedTranslations[$translationKey] = $this->getTranslationSource(
+			$translationKey, \MvcCore\Application::GetInstance()->GetRequest()->GetAppRoot()
+		);
+		if ($this->shutdownHandlerRegistered) return;
+		$this->registerShutdownHandler();
+		$this->shutdownHandlerRegistered = 2;
+	}
+
+	/**
+	 * Register shutdown handler to write new translations or update used translations.
+	 * @return void
+	 */
+	protected function registerShutdownHandler () {
 		$userAbortAllowed = $this->allowIgnoreUserAbort();
 		$app = \MvcCore\Application::GetInstance();
-		$this->newTranslations[$translationKey] = $this->getTranslationSource(
-			$translationKey, $app->GetRequest()->GetAppRoot()
-		);
 		$app->AddPreSentHeadersHandler(
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
-				if (count($this->newTranslations) === 0 || $req->IsAjax()) return TRUE;
+				if ($this->shutdownHandlerRegistered === 1 || $req->IsAjax()) return TRUE;
 				if ($userAbortAllowed) {
 					/**
 					 * To not run translations write in real background process,
@@ -325,21 +377,21 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
 				if ($req->IsAjax()) return TRUE;
 				if (!$userAbortAllowed) {
-					if (count($this->newTranslations) === 0) return;
-					$this->writeTranslations();
+					if ($this->shutdownHandlerRegistered === 1) return;
+					$this->writeTranslationsHandler();
 				} else {
 					// run in background processes:
 					register_shutdown_function(
 						function () {
-							if (count($this->newTranslations) === 0) return;
-							$this->writeTranslations();
+							if ($this->shutdownHandlerRegistered === 1) return;
+							$this->writeTranslationsHandler();
 						}
 					);
 				}
 				return TRUE;
 			}
 		);
-		$this->shutdownHandlerRegistered = TRUE;
+		$this->shutdownHandlerRegistered = 1;
 	}
 
 	/**
@@ -370,6 +422,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 				$translationsource = $file . ':' . $debugBacktraceItem['line'];
 			}
 		}
+		unset($debugBacktraceItems);
 		return $translationsource;
 	}
 
@@ -400,7 +453,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * is closed, in `register_shutdown_function()` handler.
 	 * @return void
 	 */
-	protected function writeTranslations () {
+	protected function writeTranslationsHandler () {
 		foreach (array_keys($this->newTranslations) as $newTranslation) {
 				
 		}
