@@ -462,8 +462,6 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @return void
 	 */
 	protected function writeTranslationsHandler () {
-		if ($this->cache !== NULL)
-			$this->cache->DeleteByTags(explode(',', static::CACHE_TAGS));
 		foreach (array_keys($this->newTranslations) as $newTranslation) {
 				
 		}
