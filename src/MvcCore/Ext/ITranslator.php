@@ -82,6 +82,19 @@ interface ITranslator {
 	public function GetCache ();
 
 	/**
+	 * Set translation store default resource ids. Optional.
+	 * @param  \int[]|\string[] $resourceIds,... Translation store resource id(s), optional.
+	 * @return \MvcCore\Ext\ITranslator
+	 */
+	public function SetResourceIds ($resourceIds = NULL);
+
+	/**
+	 * Get translation store default resource ids.
+	 * @return \int[]|\string[]
+	 */
+	public function GetResourceIds ();
+
+	/**
 	 * Translate given key into target localization. If there is no translation
 	 * for given key in translations data, there is returned given key with plus sign.
 	 * @param  string $key          A key to translate.

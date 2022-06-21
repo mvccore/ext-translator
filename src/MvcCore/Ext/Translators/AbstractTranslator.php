@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.0.1';
+	const VERSION = '5.0.2';
 
 	/**
 	 * Singleton instace for each localization.
@@ -48,6 +48,12 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @var \MvcCore\Ext\ICache|NULL
 	 */
 	protected $cache = NULL;
+
+	/**
+	 * Translation store default resource ids. Optional.
+	 * @var \int[]|\string[]
+	 */
+	protected $resourceIds = [];
 
 	/**
 	 * Translations store for current localication. 
@@ -161,6 +167,24 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	
 	/**
 	 * @inheritDocs
+	 * @param  \int[]|\string[] $resourceIds,... Translation store resource id(s), optional.
+	 * @return \MvcCore\Ext\Translators\AbstractTranslator
+	 */
+	public function SetResourceIds ($resourceIds = NULL) {
+		$this->mergeResourceIds(func_get_args());
+		return $this;
+	}
+
+	/**
+	 * @inheritDocs
+	 * @return \int[]|\string[]
+	 */
+	public function GetResourceIds () {
+		return $this->resourceIds;
+	}
+
+	/**
+	 * @inheritDocs
 	 * @param  string $key          A key to translate.
 	 * @param  array  $replacements An array of replacements to process in translated result.
 	 * @throws \Exception           En exception if translation is not successful.
@@ -168,7 +192,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 */
 	public function Translate ($key, $replacements = []) {
 		if ($this->translations === NULL)
-			$this->translations = $this->GetStore(NULL);
+			$this->translations = $this->GetStore();
 		$i18nIcu = FALSE;
 		if (array_key_exists($key, $this->translations)) {
 			list($i18nIcu, $translation) = $this->translations[$key];
@@ -211,16 +235,13 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @return array
 	 */
 	public function GetStore ($resourceIds = NULL) {
-		$args = func_get_args();
-		$resourceIds = is_array($args[0]) && count($args) === 1
-			? $args[0]
-			: $args;
+		$this->mergeResourceIds(func_get_args());
 		if ($this->writeNewTranslations || $this->cache === NULL)
-			return $this->LoadStore($resourceIds);
+			return $this->LoadStore($this->resourceIds);
 		return $this->cache->Load(
 			str_replace('<localization>', $this->localization, static::CACHE_KEY),
-			function (\MvcCore\Ext\ICache $cache, $cacheKey) use ($resourceIds) {
-				$result = $this->LoadStore($resourceIds);
+			function (\MvcCore\Ext\ICache $cache, $cacheKey) {
+				$result = $this->LoadStore($this->resourceIds);
 				$cache->Save($cacheKey, $result, NULL, explode(',', static::CACHE_TAGS));
 				return $result;
 			}
@@ -247,6 +268,20 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
+	 * Merge provided translations store resource ids.
+	 * @param  array $args 
+	 * @return array
+	 */
+	protected function mergeResourceIds (array $args = []) {
+		$resourceIds = isset($args[0]) && is_array($args[0]) && count($args) === 1
+			? $args[0]
+			: $args;
+		if (count($resourceIds) > 0)
+			$this->resourceIds = array_unique(array_merge($this->resourceIds, $resourceIds));
+		return $this->resourceIds;
+	}
+
+	/**
 	 * Detect if translated value is in i18n ICU format.
 	 * @param  string $translationValue 
 	 * @return bool
@@ -266,8 +301,11 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected function addNewTranslation ($translationKey) {
 		if (!$this->writeNewTranslations || $this->shutdownHandlerRegistered) return;
 		$userAbortAllowed = $this->allowIgnoreUserAbort();
-		$this->newTranslations[$translationKey] = TRUE;
-		\MvcCore\Application::GetInstance()->AddPreSentHeadersHandler(
+		$app = \MvcCore\Application::GetInstance();
+		$this->newTranslations[$translationKey] = $this->getTranslationSource(
+			$translationKey, $app->GetRequest()->GetAppRoot()
+		);
+		$app->AddPreSentHeadersHandler(
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
 				if (count($this->newTranslations) === 0 || $req->IsAjax()) return TRUE;
 				if ($userAbortAllowed) {
@@ -283,7 +321,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 				return TRUE;
 			}
 		);
-		\MvcCore\Application::GetInstance()->AddPostTerminateHandler(
+		$app->AddPostTerminateHandler(
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
 				if ($req->IsAjax()) return TRUE;
 				if (!$userAbortAllowed) {
@@ -302,6 +340,37 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 			}
 		);
 		$this->shutdownHandlerRegistered = TRUE;
+	}
+
+	/**
+	 * Complete translation source file:line from `debug_backtrace()`.
+	 * @param  string $translationKey
+	 * @param  string $appRoot
+	 * @return string
+	 */
+	protected function getTranslationSource ($translationKey, $appRoot) {
+		$translationsource = '';
+		$debugBacktraceItems = debug_backtrace();
+		$lastItemWithPaswordArg = -1;
+		foreach ($debugBacktraceItems as $index => $debugBacktraceItem) {
+			$args = $debugBacktraceItem['args'];
+			$argsCount = count($args);
+			if ($argsCount === 0 && $lastItemWithPaswordArg > -1) break;
+			if ($argsCount > 0) {
+				if ($args[0] === $translationKey)
+					$lastItemWithPaswordArg = $index;
+			}
+		}
+		if ($lastItemWithPaswordArg > -1) {
+			$debugBacktraceItem = $debugBacktraceItems[$lastItemWithPaswordArg];
+			if (isset($debugBacktraceItem['file']) && isset($debugBacktraceItem['line'])) {
+				$file = ucfirst(str_replace('\\', '/', $debugBacktraceItem['file']));
+				if (mb_strpos($file, $appRoot) === 0)
+					$file = '.' . mb_substr($file, mb_strlen($appRoot));
+				$translationsource = $file . ':' . $debugBacktraceItem['line'];
+			}
+		}
+		return $translationsource;
 	}
 
 	/**
