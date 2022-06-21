@@ -267,8 +267,16 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		$this->mergeResourceIds(func_get_args());
 		if ($this->writeTranslations || $this->cache === NULL)
 			return $this->LoadStore($this->resourceIds);
+		$resourceIdsStr = count($this->resourceIds) > 0 
+			? '[' . implode(',', $this->resourceIds) . ']' 
+			: '[]';
+		$cacheKey = str_replace(
+			['<localization>', '<resourceIds>'], 
+			[$this->localization, $resourceIdsStr], 
+			static::CACHE_KEY
+		);
 		return $this->cache->Load(
-			str_replace('<localization>', $this->localization, static::CACHE_KEY),
+			$cacheKey,
 			function (\MvcCore\Ext\ICache $cache, $cacheKey) {
 				$result = $this->LoadStore($this->resourceIds);
 				$cache->Save($cacheKey, $result, NULL, explode(',', static::CACHE_TAGS));
@@ -454,6 +462,8 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @return void
 	 */
 	protected function writeTranslationsHandler () {
+		if ($this->cache !== NULL)
+			$this->cache->DeleteByTags(explode(',', static::CACHE_TAGS));
 		foreach (array_keys($this->newTranslations) as $newTranslation) {
 				
 		}

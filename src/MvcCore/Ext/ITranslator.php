@@ -32,7 +32,7 @@ interface ITranslator {
 	 * Cache key, substring `<localization>` is replaced with `$this->localization` value.
 	 * @var string
 	 */
-	const CACHE_KEY = 'translations_<localization>';
+	const CACHE_KEY = 'translations_<localization>_<resourceIds>';
 	
 	/**
 	 * Cache tags
