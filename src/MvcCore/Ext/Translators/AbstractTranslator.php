@@ -367,7 +367,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		$app = \MvcCore\Application::GetInstance();
 		$app->AddPreSentHeadersHandler(
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
-				if ($this->shutdownHandlerRegistered === 1 || $req->IsAjax()) return TRUE;
+				if ($this->shutdownHandlerRegistered === 1) return TRUE;
 				if ($userAbortAllowed) {
 					/**
 					 * To not run translations write in real background process,
@@ -383,15 +383,13 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		);
 		$app->AddPostTerminateHandler(
 			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
-				if ($req->IsAjax()) return TRUE;
+				if ($this->shutdownHandlerRegistered === 1) return;
 				if (!$userAbortAllowed) {
-					if ($this->shutdownHandlerRegistered === 1) return;
 					$this->writeTranslationsHandler();
 				} else {
 					// run in background processes:
 					register_shutdown_function(
 						function () {
-							if ($this->shutdownHandlerRegistered === 1) return;
 							$this->writeTranslationsHandler();
 						}
 					);
