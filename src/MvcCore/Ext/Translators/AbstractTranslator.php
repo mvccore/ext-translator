@@ -357,7 +357,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		$this->registerShutdownHandler();
 		$this->shutdownHandlerRegistered = 2;
 	}
-
+	
 	/**
 	 * Register shutdown handler to write new translations or update used translations.
 	 * @return void
@@ -366,14 +366,15 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		$userAbortAllowed = $this->allowIgnoreUserAbort();
 		$app = \MvcCore\Application::GetInstance();
 		$app->AddPreSentHeadersHandler(
-			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($userAbortAllowed) {
+			function (\MvcCore\IRequest $req, \MvcCore\IResponse $res) use ($app, $userAbortAllowed) {
 				if ($this->shutdownHandlerRegistered === 1) return TRUE;
 				if ($userAbortAllowed) {
 					/**
-					 * To not run translations write in real background process,
-					 * comment following line, the line closes connection and also
-					 * it kills any tracy debug output:
+					 * Connection could be closed only if debugging is not enabled,
+					 * it means no debug bar is not appended after sent content.
 					 */
+					$debugClass = $app->GetDebugClass();
+					if (!$debugClass::GetDebugging())
 					$res
 						->SetHeader('Connection', 'close')
 						->SetHeader('Content-Length', strlen($res->GetBody()));
@@ -399,7 +400,6 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		);
 		$this->shutdownHandlerRegistered = 1;
 	}
-
 	/**
 	 * Complete translation source file:line from `debug_backtrace()`.
 	 * @param  string $translationKey
