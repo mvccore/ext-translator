@@ -407,29 +407,29 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * @return string
 	 */
 	protected function getTranslationSource ($translationKey, $appRoot) {
-		$translationsource = '';
+		$translationSource = '';
 		$debugBacktraceItems = debug_backtrace();
-		$lastItemWithPaswordArg = -1;
+		$lastItemWithTransArg = -1;
 		foreach ($debugBacktraceItems as $index => $debugBacktraceItem) {
 			$args = $debugBacktraceItem['args'];
 			$argsCount = count($args);
-			if ($argsCount === 0 && $lastItemWithPaswordArg > -1) break;
+			if ($argsCount === 0 && $lastItemWithTransArg > -1) break;
 			if ($argsCount > 0) {
 				if ($args[0] === $translationKey)
-					$lastItemWithPaswordArg = $index;
+					$lastItemWithTransArg = $index;
 			}
 		}
-		if ($lastItemWithPaswordArg > -1) {
-			$debugBacktraceItem = $debugBacktraceItems[$lastItemWithPaswordArg];
+		if ($lastItemWithTransArg > -1) {
+			$debugBacktraceItem = $debugBacktraceItems[$lastItemWithTransArg];
 			if (isset($debugBacktraceItem['file']) && isset($debugBacktraceItem['line'])) {
 				$file = ucfirst(str_replace('\\', '/', $debugBacktraceItem['file']));
-				if (mb_strpos($file, $appRoot) === 0)
+				if (mb_strpos($file, $appRoot . '/') === 0)
 					$file = '.' . mb_substr($file, mb_strlen($appRoot));
-				$translationsource = $file . ':' . $debugBacktraceItem['line'];
+				$translationSource = $file . ':' . $debugBacktraceItem['line'];
 			}
 		}
 		unset($debugBacktraceItems);
-		return $translationsource;
+		return $translationSource;
 	}
 
 	/**
