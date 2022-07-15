@@ -180,7 +180,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	
 	/**
 	 * @inheritDocs
-	 * @param  \int[]|\string[] $resourceIds,... Translation store resource id(s), optional.
+	 * @param  (int|string|NULL)[] $resourceIds,... Translation store resource id(s), optional.
 	 * @return \MvcCore\Ext\Translators\AbstractTranslator
 	 */
 	public function SetResourceIds ($resourceIds = NULL) {
@@ -190,7 +190,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 
 	/**
 	 * @inheritDocs
-	 * @return \int[]|\string[]
+	 * @return (int|string|NULL)[]
 	 */
 	public function GetResourceIds () {
 		return $this->resourceIds;
@@ -259,14 +259,22 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 
 	/**
 	 * @inheritDocs
-	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
+	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array
 	 */
 	public function GetStore ($resourceIds = NULL) {
+		if ($this->translations !== NULL) {
+			// try to return already loaded translations:
+			$resourceIdsNotInTrans = array_diff($resourceIds, $this->resourceIds);
+			if (count($resourceIdsNotInTrans) === 0)
+				return $this->translations;
+		}
+		// load translations on dev env or when cache is not available:
 		$this->mergeResourceIds(func_get_args());
 		if ($this->writeTranslations || $this->cache === NULL)
 			return $this->LoadStore($this->resourceIds);
+		// try to get store from cache:
 		$resourceIdsStr = count($this->resourceIds) > 0 
 			? '[' . implode(',', $this->resourceIds) . ']' 
 			: '[]';
@@ -287,7 +295,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 
 	/**
 	 * @inheritDocs
-	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
+	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
 	 */
