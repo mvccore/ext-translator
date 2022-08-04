@@ -419,10 +419,17 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		$debugBacktraceItems = debug_backtrace();
 		$lastItemWithTransArg = -1;
 		foreach ($debugBacktraceItems as $index => $debugBacktraceItem) {
+			if ($index < 2) continue;
 			$args = $debugBacktraceItem['args'];
 			$argsCount = count($args);
 			if ($argsCount === 0 && $lastItemWithTransArg > -1) break;
 			if ($argsCount > 0) {
+				$func = $debugBacktraceItem['function'];
+				if ($func === 'call_user_func_array' || $func === '__call') {
+					$args = $args[1];
+				} else if ($func === 'call_user_func') {
+					array_shift($args);
+				}
 				if ($args[0] === $translationKey)
 					$lastItemWithTransArg = $index;
 			}
@@ -435,6 +442,9 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 					$file = '.' . mb_substr($file, mb_strlen($appRoot));
 				$translationSource = $file . ':' . $debugBacktraceItem['line'];
 			}
+		}
+		if ($translationSource === '') {
+			x($debugBacktraceItems);
 		}
 		unset($debugBacktraceItems);
 		return $translationSource;
