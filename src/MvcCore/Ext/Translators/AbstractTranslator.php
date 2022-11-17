@@ -207,7 +207,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		if ($this->translations === NULL) 
 			$this->translations = $this->GetStore();
 		$i18nIcu = FALSE;
-		if (array_key_exists($key, $this->translations)) {
+		if (array_key_exists($key, $this->translations ?: [])) {
 			list($i18nIcu, $translation) = $this->translations[$key];
 			if ($this->writeTranslations)
 				$this->updateUsedTranslation($key);
