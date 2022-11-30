@@ -95,6 +95,12 @@ interface ITranslator {
 	public function GetResourceIds ();
 
 	/**
+	 * Get translation store cache key if cache enabled.
+	 * @return string|NULL
+	 */
+	public function GetStoreCacheKey ();
+
+	/**
 	 * Translate given key into target localization. If there is no translation
 	 * for given key in translations data, there is returned given key with plus sign.
 	 * @param  string $key          A key to translate.

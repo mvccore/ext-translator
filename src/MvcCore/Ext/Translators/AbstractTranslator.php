@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.2.0';
+	const VERSION = '5.2.1';
 
 	/**
 	 * Singleton instace for each localization.
@@ -195,6 +195,24 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	public function GetResourceIds () {
 		return $this->resourceIds;
 	}
+	
+	/**
+	 * @inheritDocs
+	 * @return string|NULL
+	 */
+	public function GetStoreCacheKey () {
+		if ($this->cache === NULL) return NULL;
+		// try to get store from cache:
+		$resourceIdsStr = count($this->resourceIds) > 0 
+			? '[' . implode(',', $this->resourceIds) . ']' 
+			: '[]';
+		$cacheKey = str_replace(
+			['<localization>', '<resourceIds>'], 
+			[$this->localization, $resourceIdsStr], 
+			static::CACHE_KEY
+		);
+		return $cacheKey;
+	}
 
 	/**
 	 * @inheritDocs
@@ -275,16 +293,8 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 		if ($this->writeTranslations || $this->cache === NULL)
 			return $this->LoadStore($this->resourceIds);
 		// try to get store from cache:
-		$resourceIdsStr = count($this->resourceIds) > 0 
-			? '[' . implode(',', $this->resourceIds) . ']' 
-			: '[]';
-		$cacheKey = str_replace(
-			['<localization>', '<resourceIds>'], 
-			[$this->localization, $resourceIdsStr], 
-			static::CACHE_KEY
-		);
 		return $this->cache->Load(
-			$cacheKey,
+			$this->GetStoreCacheKey(),
 			function (\MvcCore\Ext\ICache $cache, $cacheKey) {
 				$result = $this->LoadStore($this->resourceIds);
 				$cache->Save($cacheKey, $result, NULL, explode(',', static::CACHE_TAGS));
