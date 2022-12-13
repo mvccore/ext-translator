@@ -35,6 +35,14 @@ class IcuTranslation implements IIcuTranslation {
 	];
 
 	/**
+	 * International language code in lower case or (international 
+	 * language code in lower case plus dash and plus international 
+	 * locale code in upper case).
+	 * @var string
+	 */
+	protected $localization = NULL;
+
+	/**
 	 * I18n ICU translation pattern.
 	 * @see https://formatjs.io/docs/core-concepts/icu-syntax/
 	 * @var string|NULL

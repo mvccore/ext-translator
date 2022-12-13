@@ -34,7 +34,7 @@ interface IIcuTranslation {
 	 *								in upper case).
 	 * @return \MvcCore\Ext\Translators\IIcuTranslation
 	 */
-	public function SetLocalization ($pattern);
+	public function SetLocalization ($localization);
 	
 	/**
 	 * Get translation localization - it could be international language code in 
