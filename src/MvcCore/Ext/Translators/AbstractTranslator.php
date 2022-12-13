@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.2.1';
+	const VERSION = '5.2.2';
 
 	/**
 	 * Singleton instace for each localization.
