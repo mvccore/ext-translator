@@ -8,5 +8,5 @@ Abstract class and interface support code to create more sofisticated translator
 
 ## Installation
 ```shell
-composer require mvccore/translator
+composer require mvccore/ext-translator
 ```
