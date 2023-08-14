@@ -226,9 +226,25 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 			$this->translations = $this->GetStore();
 		$i18nIcu = FALSE;
 		if (array_key_exists($key, $this->translations ?: [])) {
-			list($i18nIcu, $translation) = $this->translations[$key];
+			$storeRec = & $this->translations[$key];
+			list($i18nIcu, $translation) = $storeRec;
+			if ($this->i18nIcuTranslationsSupported && $i18nIcu) {
+				if (is_string($translation)) {
+					$translation = new \MvcCore\Ext\Translators\IcuTranslation(
+						$this->localization, $translation
+					);
+					if (!$translation->GetParsed() && !$translation->Parse()) 
+						static::thrownAnException(
+							"There were not possible to parse i18n ICU translation, "
+							."key: `{$key}`, localization: `{$this->localization}`."
+						);
+					$storeRec[1] = $translation;
+				}
+			}
 			if ($this->writeTranslations)
 				$this->updateUsedTranslation($key);
+			if ($this->i18nIcuTranslationsSupported && $i18nIcu && count($replacements) === 0)
+				return $translation->GetPattern();
 		} else {
 			if ($this->writeTranslations)
 				$this->addNewTranslation($key);
@@ -249,11 +265,6 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected function translateReplacements ($key, $translation, $i18nIcu, $replacements = []) {
 		if ($this->i18nIcuTranslationsSupported && $i18nIcu) {
 			/** @var \MvcCore\Ext\Translators\IcuTranslation $translation */
-			if (!$translation->GetParsed())
-				if (!$translation->Parse()) static::thrownAnException(
-					"There were not possible to parse i18n ICU translation, "
-					."key: `{$key}`, localization: `{$this->localization}`."
-				);
 			$translatedValue = $translation->Translate($replacements);
 		} else {
 			$translatedValue = (string) $translation;
