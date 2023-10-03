@@ -69,7 +69,7 @@ class IcuTranslation implements IIcuTranslation {
 	protected $msgFormater = NULL;
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $translationValue 
 	 * @return bool
 	 */
@@ -92,7 +92,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $localization 
 	 * @return \MvcCore\Ext\Translators\IcuTranslation
 	 */
@@ -102,7 +102,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return string
 	 */
 	public function GetLocalization () {
@@ -110,7 +110,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $pattern 
 	 * @return \MvcCore\Ext\Translators\IcuTranslation
 	 */
@@ -120,7 +120,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return string
 	 */
 	public function GetPattern () {
@@ -128,7 +128,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  bool $parsed 
 	 * @return \MvcCore\Ext\Translators\IcuTranslation
 	 */
@@ -138,7 +138,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return bool
 	 */
 	public function GetParsed () {
@@ -146,7 +146,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @throws \Exception
 	 * @return bool
 	 */
@@ -161,7 +161,7 @@ class IcuTranslation implements IIcuTranslation {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  array $replacements 
 	 * @return bool|string
 	 */

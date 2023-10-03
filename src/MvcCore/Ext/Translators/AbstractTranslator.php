@@ -107,7 +107,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected $i18nIcuTranslationsSupported = FALSE;
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $localization Translator localization - it could be:
 	 *                              - lower case language code or 
 	 *                              - lower case language code + `_` + upper case locale code.
@@ -141,7 +141,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $localization Translator localization - it could be:
 	 *                              - lower case language code or 
 	 *                              - lower case language code + `_` + upper case locale code.
@@ -153,7 +153,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return string
 	 */
 	public function GetLocalization () {
@@ -161,7 +161,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  \MvcCore\Ext\ICache|NULL $cache
 	 * @return \MvcCore\Ext\Translators\AbstractTranslator
 	 */
@@ -171,7 +171,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return \MvcCore\Ext\ICache|NULL
 	 */
 	public function GetCache () {
@@ -179,7 +179,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  (int|string|NULL)[] $resourceIds,... Translation store resource id(s), optional.
 	 * @return \MvcCore\Ext\Translators\AbstractTranslator
 	 */
@@ -189,7 +189,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return (int|string|NULL)[]
 	 */
 	public function GetResourceIds () {
@@ -197,7 +197,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @return string|NULL
 	 */
 	public function GetStoreCacheKey () {
@@ -215,7 +215,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $key          A key to translate.
 	 * @param  array  $replacements An array of replacements to process in translated result.
 	 * @throws \Exception           En exception if translation is not successful.
@@ -276,7 +276,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 	
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  string $key			A key to translate.
 	 * @param  array  $replacements	An array of replacements to process in translated result.
 	 * @throws \Exception			En exception if translations store is not successful.
@@ -287,7 +287,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array
@@ -315,7 +315,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	}
 
 	/**
-	 * @inheritDocs
+	 * @inheritDoc
 	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
