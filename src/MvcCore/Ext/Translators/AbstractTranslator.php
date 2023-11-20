@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.2.4';
+	const VERSION = '5.2.5';
 
 	/**
 	 * Singleton instace for each localization.
@@ -229,17 +229,16 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 			$storeRec = & $this->translations[$key];
 			list($i18nIcu, $translation) = $storeRec;
 			if ($this->i18nIcuTranslationsSupported && $i18nIcu) {
-				if (is_string($translation)) {
+				if (is_string($translation)) 
 					$translation = new \MvcCore\Ext\Translators\IcuTranslation(
 						$this->localization, $translation
 					);
-					if (!$translation->GetParsed() && !$translation->Parse()) 
-						static::thrownAnException(
-							"There were not possible to parse i18n ICU translation, "
-							."key: `{$key}`, localization: `{$this->localization}`."
-						);
-					$storeRec[1] = $translation;
-				}
+				if (!$translation->GetParsed() && !$translation->Parse()) 
+					static::thrownAnException(
+						"There were not possible to parse i18n ICU translation, "
+						."key: `{$key}`, localization: `{$this->localization}`."
+					);
+				$storeRec[1] = $translation;
 			}
 			if ($this->writeTranslations)
 				$this->updateUsedTranslation($key);
