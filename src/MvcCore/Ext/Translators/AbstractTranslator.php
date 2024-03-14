@@ -27,7 +27,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 * Comparison by PHP function version_compare();
 	 * @see http://php.net/manual/en/function.version-compare.php
 	 */
-	const VERSION = '5.2.5';
+	const VERSION = '5.2.6';
 
 	/**
 	 * Singleton instace for each localization.
@@ -180,17 +180,28 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	
 	/**
 	 * @inheritDoc
-	 * @param  (int|string|NULL)[] $resourceIds,... Translation store resource id(s), optional.
+	 * @param   array<int|string|NULL> $resourceIds Translation store resource id(s) to be merged.
 	 * @return \MvcCore\Ext\Translators\AbstractTranslator
 	 */
-	public function SetResourceIds ($resourceIds = NULL) {
-		$this->mergeResourceIds(func_get_args());
+	public function AddResourceIds (array $resourceIds) {
+		if (count($resourceIds) > 0)
+			$this->resourceIds = array_unique(array_merge($this->resourceIds, $resourceIds));
 		return $this;
 	}
 
 	/**
 	 * @inheritDoc
-	 * @return (int|string|NULL)[]
+	 * @param   array<int|string|NULL> $resourceIds Translation store resource id(s) to be replaced.
+	 * @return \MvcCore\Ext\Translators\AbstractTranslator
+	 */
+	public function SetResourceIds (array $resourceIds) {
+		$this->resourceIds = $resourceIds;
+		return $this;
+	}
+
+	/**
+	 * @inheritDoc
+	 * @return array<int|string|NULL>
 	 */
 	public function GetResourceIds () {
 		return $this->resourceIds;
@@ -287,26 +298,18 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 
 	/**
 	 * @inheritDoc
-	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array
 	 */
-	public function GetStore ($resourceIds = NULL) {
-		if ($this->translations !== NULL) {
-			// try to return already loaded translations:
-			$resourceIdsNotInTrans = array_diff($resourceIds, $this->resourceIds);
-			if (count($resourceIdsNotInTrans) === 0)
-				return $this->translations;
-		}
+	public function GetStore () {
 		// load translations on dev env or when cache is not available:
-		$this->mergeResourceIds(func_get_args());
 		if ($this->writeTranslations || $this->cache === NULL)
-			return $this->LoadStore($this->resourceIds);
+			return $this->LoadStore();
 		// try to get store from cache:
 		return $this->cache->Load(
 			$this->GetStoreCacheKey(),
 			function (\MvcCore\Ext\ICache $cache, $cacheKey) {
-				$result = $this->LoadStore($this->resourceIds);
+				$result = $this->LoadStore();
 				$cache->Save($cacheKey, $result, NULL, explode(',', static::CACHE_TAGS));
 				return $result;
 			}
@@ -315,11 +318,10 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 
 	/**
 	 * @inheritDoc
-	 * @param  (int|string|NULL)[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
 	 */
-	public abstract function LoadStore ($storeIds = NULL);
+	public abstract function LoadStore ();
 	
 	/**
 	 * Thrown an exception with current translator class name.
@@ -330,20 +332,6 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	protected static function thrownAnException ($msg) {
 		$staticClass = PHP_VERSION_ID > 50500 ? static::class : get_called_class();
 		throw new \Exception("[{$staticClass}] {$msg}");
-	}
-
-	/**
-	 * Merge provided translations store resource ids.
-	 * @param  array $args 
-	 * @return array
-	 */
-	protected function mergeResourceIds (array $args = []) {
-		$resourceIds = isset($args[0]) && is_array($args[0]) && count($args) === 1
-			? $args[0]
-			: $args;
-		if (count($resourceIds) > 0)
-			$this->resourceIds = array_unique(array_merge($this->resourceIds, $resourceIds));
-		return $this->resourceIds;
 	}
 
 	/**

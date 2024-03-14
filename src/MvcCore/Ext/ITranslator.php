@@ -80,17 +80,24 @@ interface ITranslator {
 	 * @return \MvcCore\Ext\ICache|NULL
 	 */
 	public function GetCache ();
-
+	
 	/**
-	 * Set translation store default resource ids. Optional.
-	 * @param  \int[]|\string[] $resourceIds,... Translation store resource id(s), optional.
+	 * Add translation store default resource ids.
+	 * @param  array<int|string|NULL> $resourceIds Translation store resource id(s) to be merged.
 	 * @return \MvcCore\Ext\ITranslator
 	 */
-	public function SetResourceIds ($resourceIds = NULL);
+	public function AddResourceIds (array $resourceIds);
+
+	/**
+	 * Set translation store default resource ids.
+	 * @param  array<int|string|NULL> $resourceIds Translation store resource id(s) to be replaced.
+	 * @return \MvcCore\Ext\ITranslator
+	 */
+	public function SetResourceIds (array $resourceIds);
 
 	/**
 	 * Get translation store default resource ids.
-	 * @return \int[]|\string[]
+	 * @return array<int|string|NULL>
 	 */
 	public function GetResourceIds ();
 
@@ -128,17 +135,15 @@ interface ITranslator {
 	 * primary resources.
 	 * If there is no cache defined or environment is development, load 
 	 * store always from primary resources.
-	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
 	 */
-	public function GetStore ($resourceIds = NULL);
+	public function GetStore ();
 
 	/**
 	 * Load translation store from primary resource(s).
-	 * @param  \int[]|\string[]|NULL $resourceIds,... Translation store resource id(s), optional.
 	 * @throws \Exception
 	 * @return array<string, string>
 	 */
-	public function LoadStore ($resourceIds = NULL);
+	public function LoadStore ();
 }
