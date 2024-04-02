@@ -451,9 +451,9 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 				$translationSource = $file . ':' . $debugBacktraceItem['line'];
 			}
 		}
-		if ($translationSource === '') {
+		/*if ($translationSource === '') {
 			x($debugBacktraceItems);
-		}
+		}*/
 		unset($debugBacktraceItems);
 		return $translationSource;
 	}
