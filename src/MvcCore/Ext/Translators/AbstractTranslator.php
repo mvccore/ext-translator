@@ -353,7 +353,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 */
 	protected function addNewTranslation ($translationKey) {
 		$this->newTranslations[$translationKey] = $this->getTranslationSource(
-			$translationKey, \MvcCore\Application::GetInstance()->GetRequest()->GetAppRoot()
+			$translationKey, \MvcCore\Application::GetInstance()->GetPathAppRoot()
 		);
 		if ($this->shutdownHandlerRegistered) return;
 		$this->registerShutdownHandler();
@@ -367,7 +367,7 @@ abstract class AbstractTranslator implements \MvcCore\Ext\ITranslator {
 	 */
 	protected function updateUsedTranslation ($translationKey) {
 		$this->usedTranslations[$translationKey] = $this->getTranslationSource(
-			$translationKey, \MvcCore\Application::GetInstance()->GetRequest()->GetAppRoot()
+			$translationKey, \MvcCore\Application::GetInstance()->GetPathAppRoot()
 		);
 		if ($this->shutdownHandlerRegistered) return;
 		$this->registerShutdownHandler();
